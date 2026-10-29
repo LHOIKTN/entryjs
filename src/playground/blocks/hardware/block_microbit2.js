@@ -8,6 +8,7 @@ const EVENT_INTERVAL = 150;
 Entry.Microbit2 = new (class Microbit2 {
     constructor() {
         this.functionKeys = {
+            GET_ULTRASONIC: 'get-ultrasonic',
             GET_ANALOG: 'get-analog',
             GET_DIGITAL: 'get-digital',
             SET_ANALOG: 'set-analog',
@@ -187,8 +188,16 @@ Entry.Microbit2 = new (class Microbit2 {
         this.commandStatus = {};
         this.commandValue = {};
         this.digitalPins = [
+            ['P1', 1],
+            ['P2', 2],
+            // P3, P4, P6, P7 and P10 require display.off() before GPIO use.
+            ['P3', 3],
+            ['P4', 4],
+            ['P6', 6],
+            ['P7', 7],
             ['P8', 8],
             ['P9', 9],
+            ['P10', 10],
             ['P12', 12],
             ['P13', 13],
             ['P14', 14],
@@ -196,7 +205,6 @@ Entry.Microbit2 = new (class Microbit2 {
             ['P16', 16],
         ];
         this.analogPins = [
-            ['P0', 0],
             ['P1', 1],
             ['P2', 2],
             ['P3', 3],
@@ -204,7 +212,6 @@ Entry.Microbit2 = new (class Microbit2 {
             ['P10', 10],
         ];
         this.majorPins = [
-            ['P0', 0],
             ['P1', 1],
             ['P2', 2],
         ];
@@ -224,6 +231,7 @@ Entry.Microbit2 = new (class Microbit2 {
         ];
         this.blockMenuBlocks = [
             'microbit2_common_title',
+            'microbit2_get_ultrasonic',
             'microbit2_get_analog',
             'microbit2_set_analog',
             'microbit2_get_digital',
@@ -366,6 +374,7 @@ Entry.Microbit2 = new (class Microbit2 {
         return {
             ko: {
                 template: {
+                    microbit2_get_ultrasonic: '초음파 TRIG %1 ECHO %2 거리(cm)',
                     microbit2_get_analog: '핀 %1 번 아날로그 값',
                     microbit2_set_analog: '핀 %1 에 아날로그 값 %2 를 출력하기 %3',
                     microbit2_get_digital: '핀 %1 번 디지털 값',
@@ -522,8 +531,8 @@ Entry.Microbit2 = new (class Microbit2 {
                 Helper: {
                     microbit2_get_analog: '선택한 핀의 아날로그 값입니다. (0 ~ 1023)',
                     microbit2_set_analog: '선택한 핀에 입력한 아날로그 값을 출력합니다. (0 ~ 1023)',
-                    microbit2_get_digital: '선택한 핀의 디지털 값입니다. (0, 1)',
-                    microbit2_set_digital: '선택한 핀에 입력한 디지털 값을 출력합니다. (0, 1)',
+                    microbit2_get_digital: '선택한 핀의 디지털 값입니다. (0, 1) P3·P4·P6·P7·P10은 먼저 LED 기능을 끄세요.',
+                    microbit2_set_digital: '선택한 핀에 입력한 디지털 값을 출력합니다. (0, 1) P3·P4·P6·P7·P10은 먼저 LED 기능을 끄세요.',
                     microbit2_screen_toggle: 'LED 기능을 켜거나 끕니다.',
                     microbit2_set_led: 'X, Y 좌표로 선택한 LED를 선택한 밝기로 켭니다.',
                     microbit2_get_led: 'X, Y 좌표로 선택한 LED의 밝기 값입니다.',
@@ -562,6 +571,7 @@ Entry.Microbit2 = new (class Microbit2 {
             },
             en: {
                 template: {
+                    microbit2_get_ultrasonic: 'ultrasonic TRIG %1 ECHO %2 distance (cm)',
                     microbit2_get_analog: 'analog read pin %1',
                     microbit2_set_analog: 'Set analog pin %1 to %2 %3',
                     microbit2_get_digital: 'digital read pin %1',
@@ -768,6 +778,7 @@ Entry.Microbit2 = new (class Microbit2 {
             },
             jp: {
                 template: {
+                    microbit2_get_ultrasonic: '超音波 TRIG %1 ECHO %2 距離(cm)',
                     microbit2_get_analog: 'たんし %1 のアナログ値',
                     microbit2_set_analog: 'たんし %1 のアナログ値 %2 を出力する %3',
                     microbit2_get_digital: 'たんし %1 のデジタル値',
@@ -1011,6 +1022,36 @@ Entry.Microbit2 = new (class Microbit2 {
                 isNotFor: ['microbit2'],
                 events: {},
             },
+            microbit2_get_ultrasonic: {
+                color: EntryStatic.colorSet.block.default.HARDWARE,
+                outerLine: EntryStatic.colorSet.block.darken.HARDWARE,
+                fontColor: '#ffffff',
+                skeleton: 'basic_string_field',
+                statements: [],
+                params: [8, 12].map((value) => ({
+                    type: 'Dropdown',
+                    options: this.digitalPins,
+                    value,
+                    fontSize: 11,
+                    bgColor: EntryStatic.colorSet.block.darken.HARDWARE,
+                    arrowColor: EntryStatic.colorSet.arrow.default.HARDWARE,
+                })),
+                events: {},
+                class: 'microbit2Pin',
+                isNotFor: ['microbit2'],
+                def: { type: 'microbit2_get_ultrasonic', params: [8, 12] },
+                paramsKeyMap: { TRIG: 0, ECHO: 1 },
+                func: (sprite, script) => {
+                    const reqOptions = {
+                        id: script.entity.id,
+                        command: this.functionKeys.GET_ULTRASONIC,
+                        payload: `${script.getValue('TRIG')};${script.getValue('ECHO')}`,
+                    };
+                    this.requestCommandWithResponse(reqOptions);
+                    const value = Number(this.getResponse(reqOptions)[1]);
+                    return Number.isFinite(value) ? value : -1;
+                },
+            },
             microbit2_get_analog: {
                 color: EntryStatic.colorSet.block.default.HARDWARE,
                 outerLine: EntryStatic.colorSet.block.darken.HARDWARE,
@@ -1021,7 +1062,7 @@ Entry.Microbit2 = new (class Microbit2 {
                     {
                         type: 'Dropdown',
                         options: this.analogPins,
-                        value: 0,
+                        value: 1,
                         fontSize: 11,
                         bgColor: EntryStatic.colorSet.block.darken.HARDWARE,
                         arrowColor: EntryStatic.colorSet.arrow.default.HARDWARE,
@@ -1093,7 +1134,7 @@ Entry.Microbit2 = new (class Microbit2 {
                     {
                         type: 'Dropdown',
                         options: this.analogPins,
-                        value: 0,
+                        value: 1,
                         fontSize: 11,
                         bgColor: EntryStatic.colorSet.block.darken.HARDWARE,
                         arrowColor: EntryStatic.colorSet.arrow.default.HARDWARE,
@@ -2256,7 +2297,7 @@ Entry.Microbit2 = new (class Microbit2 {
                     {
                         type: 'Dropdown',
                         options: this.analogPins,
-                        value: 0,
+                        value: 1,
                         fontSize: 11,
                         bgColor: EntryStatic.colorSet.block.darken.HARDWARE,
                         arrowColor: EntryStatic.colorSet.arrow.default.HARDWARE,
@@ -2324,7 +2365,7 @@ Entry.Microbit2 = new (class Microbit2 {
                     {
                         type: 'Dropdown',
                         options: this.majorPins,
-                        value: 0,
+                        value: 1,
                         fontSize: 11,
                         bgColor: EntryStatic.colorSet.block.darken.HARDWARE,
                         arrowColor: EntryStatic.colorSet.arrow.default.HARDWARE,
